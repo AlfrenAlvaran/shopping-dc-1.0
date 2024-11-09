@@ -4,13 +4,14 @@ include('include/config.php');
 if (strlen($_SESSION['alogin']) == 0) {
 	header('location:index.php');
 } else {
-	date_default_timezone_set('Asia/Kolkata'); 
+	date_default_timezone_set('Asia/Kolkata');
 	$currentTime = date('d-m-Y h:i:s A', time());
 
 	if (isset($_GET['del'])) {
 		mysqli_query($con, "delete from products where id = '" . $_GET['id'] . "'");
 		$_SESSION['delmsg'] = "Product deleted !!";
 	}
+
 
 ?>
 	<!DOCTYPE html>
@@ -56,21 +57,93 @@ if (strlen($_SESSION['alogin']) == 0) {
 									<table cellpadding="0" cellspacing="0" border="0" class="datatable-1 table table-bordered table-striped	 display" width="100%">
 										<thead>
 											<tr>
-												<th>#</th>
 												<th>Name</th>
 												<th>Email </th>
 											</tr>
 										</thead>
 										<tbody>
+											<?php
+											function getConversation($user_id, $conn)
+											{
 
-										
+												$sql = "SELECT * FROM conversations
+														WHERE user_1=? OR user_2=?
+														ORDER BY conversation_id  DESC";
 
+												$stmt = mysqli_prepare($conn, $sql);
+												mysqli_stmt_bind_param($stmt, "ii", $user_id, $user_id);
+												mysqli_stmt_execute($stmt);
+												$result = mysqli_stmt_get_result($stmt);
+
+												if (mysqli_num_rows($result) > 0) {
+													$conversations = mysqli_fetch_all($result, MYSQLI_ASSOC);
+
+
+													$user_data = [];
+													# Looping through the conversations
+													foreach ($conversations as $conversation) {
+														# Determine the user to query
+														$other_user_id = ($conversation['user_1'] == $user_id) ? $conversation['user_2'] : $conversation['user_1'];
+
+														$sql2 = "SELECT * FROM users WHERE id=?";
+														$stmt2 = mysqli_prepare($conn, $sql2);
+														mysqli_stmt_bind_param($stmt2, "i", $other_user_id);
+														mysqli_stmt_execute($stmt2);
+														$result2 = mysqli_stmt_get_result($stmt2);
+														$allConversations = mysqli_fetch_all($result2, MYSQLI_ASSOC);
+
+														# Pushing the data into the array 
+														array_push($user_data, $allConversations[0]);
+													}
+
+													return $user_data;
+												} else {
+													return [];
+												}
+											}
+
+											function getUser($id, $conn)
+											{
+												$sql = "SELECT * FROM users WHERE id=?";
+												$stmt = mysqli_prepare($conn, $sql);
+
+												if ($stmt) {
+													mysqli_stmt_bind_param($stmt, "i", $id);
+													mysqli_stmt_execute($stmt);
+													$result = mysqli_stmt_get_result($stmt);
+
+													if (mysqli_num_rows($result) === 1) {
+														$user = mysqli_fetch_assoc($result);
+														return $user;
+													} else {
+														echo "No user found with id: " . htmlspecialchars($id);
+														return [];
+													}
+												} else {
+													echo "Failed to prepare statement.";
+													return [];
+												}
+											}
+
+
+											$user = getUser($_SESSION['id'], $con);
+
+											$conversations = getConversation($user['id'], $con);
+											?>
+
+											<?php if (!empty($conversations)) { ?>
+												<?php foreach ($conversations as $conversation) { ?>
+													<tr onclick="window.location.href='conversation.php?id=<?= $conversation['id'] ?>'">
+														<td><?= htmlspecialchars($conversation['name']) ?></td>
+														<td><?= htmlspecialchars($conversation['email']) ?></td>
+													</tr>
+												<?php } ?>
+											<?php } ?>
+
+										</tbody>
 									</table>
 								</div>
 							</div>
-
-
-
 						</div><!--/.content-->
 					</div><!--/.span9-->
 				</div>

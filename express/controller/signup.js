@@ -1,34 +1,40 @@
-import nodemailer from 'nodemailer';
-import { SIGNUP } from './mailtamplate.js';
+import nodemailer from "nodemailer";
+import { SIGNUP } from "./mailtamplate.js";
 
 export const sign_up = async (req, res) => {
-    try {
-        const { email, name } = req.body; 
-        console.log(req.body)
-    
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL,
-                pass: process.env.PASSWORD_APP
-            }
-        });
+  try {
+    const { email, name } = req.body;
+    console.log(req.body);
 
-        const mailOptions = {
-            from: email,
-            to: process.env.EMAIL,
-            subject: "Register Customer",
-            html: SIGNUP.replace('{name}', name).replace('{email}', email)
-        };
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD_APP,
+      },
+    });
 
-        const response = await transporter.sendMail(mailOptions);
-        console.log('Email Sent: ', response.messageId);
+    const mailOptions = {
+      from: email,
+      to: process.env.EMAIL,
+      subject: "Register Customer",
+      html: SIGNUP.replace("{name}", name).replace("{email}", email),
+    };
 
-        res.status(200).send({ message: "Email sent successfully" });
-    } catch (error) {
-        console.error('Error sending email:', error);
-        res.status(500).send({ message: "Failed to send email", error });
-    }
+    const response = await transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending email:", error);
+      } else {
+        console.log("Email sent:", info.response);
+      }
+    });
+
+
+    console.log(response)
+
+    res.status(200).send({ message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).send({ message: "Failed to send email", error });
+  }
 };
-
-
